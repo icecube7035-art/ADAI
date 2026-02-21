@@ -139,7 +139,11 @@ export async function generateVideoAd(request: AdRequest, aspect: AspectRatio = 
   const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
   if (!downloadLink) throw new Error("Video generation failed.");
   
-  const res = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  const res = await fetch(downloadLink, {
+    headers: {
+      'x-goog-api-key': process.env.API_KEY || ''
+    }
+  });
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
