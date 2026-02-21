@@ -1,0 +1,8 @@
+{
+  "name": "AdAI - Ads. Done. Instantly.",
+  "description": "A powerful, AI-driven advertising platform for creating high-quality text, image, and video ads instantly using Gemini and Veo.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
