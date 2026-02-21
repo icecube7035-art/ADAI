@@ -497,7 +497,13 @@ const App: React.FC = () => {
 
   // Use session storage to ensure animation only plays once per session
   useEffect(() => {
-    const hasPlayed = sessionStorage.getItem('adai_entry_played');
+    let hasPlayed = false;
+    try {
+      hasPlayed = sessionStorage.getItem('adai_entry_played') === 'true';
+    } catch (e) {
+      console.warn('sessionStorage not available');
+    }
+    
     const isRoot = window.location.hash === '' || window.location.hash === '#/';
     
     // Condition: first visit or refresh on home
@@ -508,7 +514,11 @@ const App: React.FC = () => {
 
   const handleEntryComplete = () => {
     setShowEntryAnimation(false);
-    sessionStorage.setItem('adai_entry_played', 'true');
+    try {
+      sessionStorage.setItem('adai_entry_played', 'true');
+    } catch (e) {
+      // Ignore
+    }
   };
 
   const handleAdsGenerated = (newAds: GeneratedAd[]) => {
