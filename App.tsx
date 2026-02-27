@@ -45,7 +45,8 @@ const EntryAnimation: React.FC<{ onComplete: () => void }> = ({ onComplete }) =>
           Ads, made <span className="gradient-text">instantly.</span>
         </h1>
         <p className="text-gray-500 font-light text-lg animate-fade-up delay-200">
-          Intelligence powered creative tools.
+          Intelligence powered creative tools. <br />
+          <span className="text-violet-400 font-medium">Powered by Aurexis</span>
         </p>
       </div>
 
@@ -150,7 +151,7 @@ const Dashboard: React.FC = () => {
               <span className="gradient-text">Instantly.</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-400 font-light max-w-xl mx-auto lg:mx-0 animate-fade-up delay-100 leading-relaxed">
-              Create high-quality ads with AI — text, images, and video — in minutes.
+              Create high-quality ads with AI — text, images, and video — in minutes. <span className="text-violet-400 font-medium">Powered by Aurexis.</span>
             </p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 pt-4 animate-fade-up delay-200">
               <Link to="/create">
@@ -299,7 +300,7 @@ const CreateAd: React.FC<{ onAdsGenerated: (ads: GeneratedAd[]) => void }> = ({ 
       {showKeyDialog && <ApiKeyDialog onClose={() => setShowKeyDialog(false)} />}
       <div className="max-w-4xl mx-auto mb-12 text-center reveal">
         <h2 className="text-4xl font-bold mb-4">New Campaign</h2>
-        <p className="text-gray-400">Tell us about your product and let AdAI handle the magic.</p>
+        <p className="text-gray-400">Tell us about your product and let AdAI handle the magic. <span className="text-violet-400 font-medium">Powered by Aurexis.</span></p>
       </div>
       <div className="reveal delay-100">
         <AdGeneratorForm onSubmit={handleGenerate} isLoading={loading} />
@@ -332,10 +333,29 @@ const CreateAd: React.FC<{ onAdsGenerated: (ads: GeneratedAd[]) => void }> = ({ 
 };
 
 // --- Gallery Component ---
-const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: string) => void }> = ({ ads, onEdit }) => {
+const Gallery: React.FC<{ 
+  ads: GeneratedAd[], 
+  onEdit: (id: string, newContent: string) => void,
+  onDelete: (id: string) => void
+}> = ({ ads, onEdit, onDelete }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
+  const [textEditData, setTextEditData] = useState({ headline: '', body: '', cta: '' });
   const [isEditing, setIsEditing] = useState(false);
+
+  const handleTextEditSave = () => {
+    if (editingTextId) {
+      onEdit(editingTextId, JSON.stringify(textEditData));
+      setEditingTextId(null);
+    }
+  };
+
+  const startTextEdit = (ad: GeneratedAd) => {
+    const data = JSON.parse(ad.content);
+    setTextEditData(data);
+    setEditingTextId(ad.id);
+  };
 
   const handleImageEdit = async (ad: GeneratedAd) => {
     setIsEditing(true);
@@ -357,8 +377,8 @@ const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: s
         <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-8 border border-white/5">
           <i className="fas fa-box-open text-4xl text-gray-700"></i>
         </div>
-        <h2 className="text-3xl font-bold text-gray-500 mb-4">Your gallery is empty</h2>
-        <p className="text-gray-600 mb-10 max-w-sm">Ready to create something amazing? Start your first campaign today.</p>
+        <h2 className="text-3xl font-bold text-gray-500 mb-4">No saved ads yet</h2>
+        <p className="text-gray-600 mb-10 max-w-sm">Your creative workspace is empty. Start your first campaign to see your ads here.</p>
         <Link to="/create">
           <Button className="rounded-2xl py-4 px-8">New Campaign</Button>
         </Link>
@@ -370,8 +390,8 @@ const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: s
     <div className="py-24 px-6 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 reveal">
         <div>
-          <h2 className="text-5xl font-bold mb-4">Creative Archive</h2>
-          <p className="text-gray-500">Managing {ads.length} generated ad assets</p>
+          <h2 className="text-5xl font-bold mb-4">My Ads</h2>
+          <p className="text-gray-500">Managing {ads.length} saved ad assets</p>
         </div>
         <Link to="/create">
           <Button variant="outline" className="rounded-xl px-6">Generate More</Button>
@@ -411,7 +431,16 @@ const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: s
               )}
 
               {ad.type === AdType.TEXT && (
-                <div className="p-8 space-y-5">
+                <div className="p-8 space-y-5 relative group/text">
+                  <div className="absolute top-4 right-4 opacity-0 group-hover/text:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => startTextEdit(ad)}
+                      className="w-8 h-8 rounded-lg bg-white/10 hover:bg-violet-600 flex items-center justify-center text-white transition-colors"
+                      title="Edit Text"
+                    >
+                      <i className="fas fa-pen text-xs"></i>
+                    </button>
+                  </div>
                   {(() => {
                     const data = JSON.parse(ad.content);
                     return (
@@ -449,8 +478,12 @@ const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: s
             
             <div className="p-5 flex gap-3 bg-white/[0.01]">
               <Button variant="outline" className="flex-1 rounded-xl py-3 text-xs uppercase tracking-widest font-black">Download Asset</Button>
-              <button className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-gray-500 transition-colors">
-                <i className="fas fa-ellipsis"></i>
+              <button 
+                onClick={() => onDelete(ad.id)}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+                title="Delete Ad"
+              >
+                <i className="fas fa-trash-can"></i>
               </button>
             </div>
           </div>
@@ -485,15 +518,73 @@ const Gallery: React.FC<{ ads: GeneratedAd[], onEdit: (id: string, newContent: s
           </div>
         </div>
       )}
+
+      {editingTextId && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[150] flex items-center justify-center p-6">
+          <div className="glass max-w-lg w-full p-10 rounded-[2rem] space-y-6 shadow-2xl border-white/10">
+            <h3 className="text-3xl font-bold">Edit Ad Copy</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Headline</label>
+                <input 
+                  type="text"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-white"
+                  value={textEditData.headline}
+                  onChange={e => setTextEditData({ ...textEditData, headline: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Body Copy</label>
+                <textarea 
+                  rows={4}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-white resize-none"
+                  value={textEditData.body}
+                  onChange={e => setTextEditData({ ...textEditData, body: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Call to Action</label>
+                <input 
+                  type="text"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all text-white"
+                  value={textEditData.cta}
+                  onChange={e => setTextEditData({ ...textEditData, cta: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex gap-4 pt-4">
+              <Button variant="secondary" onClick={() => setEditingTextId(null)} className="flex-1 rounded-2xl py-4">Cancel</Button>
+              <Button onClick={handleTextEditSave} className="flex-1 rounded-2xl py-4">Save Changes</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // --- Main App Entry ---
 const App: React.FC = () => {
-  const [savedAds, setSavedAds] = useState<GeneratedAd[]>([]);
+  const [savedAds, setSavedAds] = useState<GeneratedAd[]>(() => {
+    try {
+      const saved = localStorage.getItem('adai_saved_ads');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load saved ads', e);
+      return [];
+    }
+  });
   const [showEntryAnimation, setShowEntryAnimation] = useState(false);
   const [user, setUser] = useState<{ email: string } | null>({ email: 'user@example.com' }); // Mocked logged-in user
+
+  // Persist ads to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('adai_saved_ads', JSON.stringify(savedAds));
+    } catch (e) {
+      console.error('Failed to save ads', e);
+    }
+  }, [savedAds]);
 
   // Use session storage to ensure animation only plays once per session
   useEffect(() => {
@@ -529,6 +620,12 @@ const App: React.FC = () => {
     setSavedAds(prev => prev.map(ad => ad.id === id ? { ...ad, content: newContent } : ad));
   };
 
+  const handleDeleteAd = (id: string) => {
+    if (confirm('Are you sure you want to delete this ad?')) {
+      setSavedAds(prev => prev.filter(ad => ad.id !== id));
+    }
+  };
+
   const handleLogoutSim = () => {
     sessionStorage.removeItem('adai_entry_played');
     setUser(null);
@@ -548,9 +645,10 @@ const App: React.FC = () => {
                 <i className="fas fa-bolt text-white text-xl"></i>
               </div>
               <span className="text-2xl font-black tracking-tighter">AdAI</span>
+              <span className="text-[10px] uppercase tracking-widest text-violet-400 font-bold ml-2 hidden sm:inline-block">Powered by Aurexis</span>
             </Link>
             <div className="flex items-center gap-6 md:gap-10">
-              <Link to="/gallery" className="text-[10px] md:text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Gallery</Link>
+              <Link to="/gallery" className="text-[10px] md:text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors">My Ads</Link>
               <Link to="/create">
                 <Button className="rounded-xl px-4 md:px-6 py-2 shadow-lg shadow-violet-600/10 text-xs md:text-sm">New Campaign</Button>
               </Link>
@@ -567,7 +665,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/create" element={<CreateAd onAdsGenerated={handleAdsGenerated} />} />
-            <Route path="/gallery" element={<Gallery ads={savedAds} onEdit={handleEditAd} />} />
+            <Route path="/gallery" element={<Gallery ads={savedAds} onEdit={handleEditAd} onDelete={handleDeleteAd} />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/contact" element={user ? <ContactPage userEmail={user.email} /> : <Dashboard />} />
@@ -582,6 +680,7 @@ const App: React.FC = () => {
                   <i className="fas fa-bolt text-white text-[10px]"></i>
                 </div>
                 <span className="text-lg font-black tracking-tighter uppercase">AdAI</span>
+                <span className="text-[8px] uppercase tracking-widest text-violet-400 font-bold ml-2">Powered by Aurexis</span>
               </div>
               <p className="text-gray-600 text-sm">{TAGLINE}</p>
             </div>
@@ -592,7 +691,7 @@ const App: React.FC = () => {
                <Link to="/contact" className="hover:text-violet-400 transition-colors">Contact</Link>
             </div>
 
-            <p className="text-[10px] text-gray-700 font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} AdAI AI Technologies</p>
+            <p className="text-[10px] text-gray-700 font-bold uppercase tracking-[0.2em]">© {new Date().getFullYear()} AdAI AI Technologies. Powered by Aurexis.</p>
           </div>
         </footer>
       </div>
